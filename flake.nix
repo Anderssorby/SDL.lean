@@ -28,7 +28,16 @@
         leanPkgs = lean.packages.${system};
         pkgs = nixpkgs.legacyPackages.${system};
         inherit (lib.${system}) buildCLib concatStringsSep;
-        includes = [ "${pkgs.SDL2.dev}/include" "${leanPkgs.lean-bin-tools-unwrapped}/include" ];
+        includes = [
+          "${pkgs.SDL2.dev}/include"
+          "${pkgs.SDL2.dev}/include/SDL2"
+          "${pkgs.SDL2_ttf}/include"
+          #"${pkgs.SDL2_net.dev}/include"
+          "${pkgs.SDL2_gfx}/include"
+          "${pkgs.SDL2_mixer}/include"
+          "${pkgs.SDL2_image}/include"
+          "${leanPkgs.lean-bin-tools-unwrapped}/include"
+        ];
         INCLUDE_PATH = concatStringsSep ":" includes;
         libsdl2 = (pkgs.SDL2.out // {
           name = "lib/libSDL2.so";
@@ -63,12 +72,14 @@
           };
         joinDepsDerivationns = getSubDrv:
           pkgs.lib.concatStringsSep ":" (map (d: "${getSubDrv d}") ([ project ] ++ project.allExternalDeps));
+        withGdb = bin: pkgs.writeShellScriptBin "${bin.name}-with-gdb" "${pkgs.gdb}/bin/gdb ${bin}/bin/${bin.name}";
       in
       {
         inherit project test;
         packages = {
           ${name} = project.sharedLib;
           test = test.executable;
+          debug-test = withGdb test.executable;
         };
 
         checks.test = test.executable;
