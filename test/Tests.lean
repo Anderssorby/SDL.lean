@@ -5,12 +5,16 @@ def main (args : List String) : IO UInt32 := do
     let r ← SDL.init
     if r != 0 then
       IO.eprintln "Error in init"
-    else
-      println! "init with {r}"
-    let window ← SDL.createWindow "Test"
+    let window ← SDL.createWindow "Test" 500 500
+    let renderer ← SDL.createRenderer window
+    SDL.delay 5000
+
+    SDL.destroyRenderer renderer
+    SDL.destroyWindow window
+    SDL.quit
     pure 0
   catch e =>
     IO.eprintln <| "error: " ++ toString e -- avoid "uncaught exception: ..."
-    IO.eprintln <| (← SDL.getError)
+    IO.eprintln (← SDL.getError)
     pure 1
 
