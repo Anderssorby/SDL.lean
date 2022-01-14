@@ -192,13 +192,14 @@ lean_obj_res lean_sdl_destroy_texture(b_lean_obj_arg l) {
 }
 
 /*
-SDL.renderCopy (r: @& Renderer) (t: @& Texture): IO Unit
+SDL.renderCopy (r: @& Renderer) (t: @& Texture) (src dst: @& SDL_Rect): IO Unit
 */
 lean_obj_res lean_sdl_render_copy(b_lean_obj_arg r, b_lean_obj_arg t, b_lean_obj_arg o_src, b_lean_obj_arg o_dst) {
-  
+  SDL_Rect *src = lean_get_external_data(o_src);
+  SDL_Rect *dst = lean_get_external_data(o_dst);
   SDL_Renderer *renderer = lean_get_external_data(r);
   SDL_Texture *tex = lean_get_external_data(t);
-  SDL_RenderCopy(renderer, tex, NULL, NULL);
+  SDL_RenderCopy(renderer, tex, src, dst);
   return lean_io_result_mk_ok(lean_box(0));
 }
 
@@ -273,6 +274,13 @@ SDL.mkSDL_Rect (x y w h : UInt32) : SDL_Rect
 lean_obj_res lean_sdl_mk_sdl_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h) {
   SDL_Rect *p = {x, y, w, h};
   return lean_alloc_external(get_sdl_rect_class(), p);
+}
+
+/*
+SDL.SDL_Rect_NULL : Thunk SDL_Rect
+*/
+lean_obj_res lean_sdl_rect_null() {
+  return lean_alloc_external(get_sdl_rect_class(), (SDL_Rect *) NULL);
 }
 
 /*

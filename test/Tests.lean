@@ -8,7 +8,7 @@ def animationTest : IO Unit := do
   let renderer ← SDL.createRenderer window
   let surf ← SDL.loadBMP "images/green_nebula.bmp"
   let tex ← SDL.createTextureFromSurface renderer surf
-  SDL.renderCopy renderer tex
+  SDL.renderCopy renderer tex none none
   SDL.renderPresent renderer
   SDL.delay 5000
   SDL.destroyWindow window

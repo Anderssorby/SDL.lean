@@ -27,7 +27,7 @@
       let
         leanPkgs = lean.packages.${system};
         pkgs = nixpkgs.legacyPackages.${system};
-        inherit (lib.${system}) buildCLib concatStringsSep makeOverridable;
+        inherit (lib.${system}) buildCLib concatStringsSep makeOverridable filter;
         includes = [
           "${pkgs.SDL2.dev}/include"
           "${pkgs.SDL2.dev}/include/SDL2"
@@ -39,18 +39,30 @@
           "${leanPkgs.lean-bin-tools-unwrapped}/include"
         ];
         INCLUDE_PATH = concatStringsSep ":" includes;
-        libsdl2 = (pkgs.SDL2.out // {
+        libsdl2 = pkgs.SDL2.out // {
           name = "lib/libSDL2.so";
           linkName = "SDL2";
           libName = "libSDL2.so";
-        });
+          __toString = d: "${pkgs.SDL2.out}/lib";
+        };
+        hasPrefix =
+          # Prefix to check for
+          prefix:
+          # Input string
+          content:
+          let
+            lenPrefix = builtins.stringLength prefix;
+          in
+          prefix == builtins.substring 0 lenPrefix content;
         c-shim = buildCLib {
           updateCCOptions = d: d ++ (map (i: "-I${i}") includes);
           name = "lean-SDL2-bindings";
+          sourceFiles = [ "bindings/*.c" ];
           sharedLibDeps = [
             libsdl2
           ];
-          src = ./bindings;
+          src = builtins.filterSource
+            (path: type: hasPrefix (toString ./. + "/bindings") path) ./.;
           extraDrvArgs = {
             linkName = "lean-SDL2-bindings";
           };
@@ -60,7 +72,7 @@
           {
             inherit name;
             # Where the lean files are located
-            nativeSharedLibs = [ (libsdl2 // { __toString = d: "${libsdl2}/lib"; }) c-shim ];
+            nativeSharedLibs = [ libsdl2 c-shim ];
             src = ./src;
           };
         test = makeOverridable leanPkgs.buildLeanPackage
@@ -79,7 +91,14 @@
         packages = {
           ${name} = project.sharedLib;
           test = test.executable;
-          debug-test = (test.overrideArgs {debug = true;}).executable;
+          debug-test = (test.overrideArgs {
+            debug = true;
+            deps =
+            [ (project.override {
+                nativeSharedLibs = [ libsdl2 (c-shim.override { debug = true; }) ];
+              })
+            ];
+          }).executable;
           gdb-test = withGdb self.packages.${system}.debug-test;
         };
 
