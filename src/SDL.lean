@@ -74,11 +74,65 @@ After this the texture can no longer be used.
 @[extern "lean_sdl_destroy_texture"]
 constant destroyTexture : (t : @& Texture) → IO Unit
 
+structure Rect where
+  x : UInt32
+  y : UInt32
+  h : UInt32
+  w : UInt32
+
+structure Point where
+  x : UInt32
+  y : UInt32
+
+constant SDL_RectP : PointedType
+
+def SDL_Rect := SDL_RectP.type
+
+instance : Inhabited SDL_Rect := ⟨SDL_RectP.val⟩
+
+@[extern "lean_sdl_mk_sdl_rect"]
+def mkSDL_Rect (x y w h : UInt32) : SDL_Rect := SDL_RectP.val
+
+def toSDL_Rect (r : Rect) : SDL_Rect :=
+  mkSDL_Rect r.x r.y r.w r.w
+
+constant SDL_PointP : PointedType
+
+def SDL_Point := SDL_PointP.type
+
+instance : Inhabited SDL_Point := ⟨SDL_PointP.val⟩
+
+@[extern "lean_sdl_mk_sdl_point"]
+def mkSDL_Point (x y : UInt32) : SDL_Point := SDL_PointP.val
+
+def toSDL_Point (p : Point) : SDL_Point :=
+  mkSDL_Point p.x p.y
+
 @[extern "lean_sdl_render_copy"]
-constant renderCopy : (r: @& Renderer) → (t : @& Texture) → IO Unit
+private def renderCopyNative (r: @& Renderer) (t : @& Texture) (src dest : @& SDL_Rect) : IO Unit := ()
+
+def renderCopy (r: @& Renderer) (t : @& Texture) (src dest : @& Option Rect := none) : IO Unit :=
+  let s := if let some r := src then
+    toSDL_Rect r
+  else
+    SDL_RectP.val
+  let d := if let some r := dest then
+    toSDL_Rect r
+  else
+    SDL_RectP.val
+  renderCopyNative r t s d
 
 @[extern "lean_sdl_render_present"]
 constant renderPresent : (r: @& Renderer) → IO Unit
+
+structure Color where
+  r : UInt8
+  g : UInt8
+  b : UInt8
+  a : UInt8
+
+@[extern "lean_sdl_set_render_draw_color"]
+def setRenderDrawColor (r: @& Renderer) (r g b a : UInt8) : IO Unit := ()
 
 /-
 Pause thread for ms milliseconds.

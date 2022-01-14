@@ -1,5 +1,19 @@
 import SDL
 
+def animationTest : IO Unit := do
+  let r ← SDL.init
+  if r != 0 then
+    IO.eprintln "Error in init"
+  let window ← SDL.createWindow "Animation" 800 500
+  let renderer ← SDL.createRenderer window
+  let surf ← SDL.loadBMP "images/green_nebula.bmp"
+  let tex ← SDL.createTextureFromSurface renderer surf
+  SDL.renderCopy renderer tex
+  SDL.renderPresent renderer
+  SDL.delay 5000
+  SDL.destroyWindow window
+  SDL.quit
+  
 def bitmapTest : IO Unit := do
   let r ← SDL.init
   if r != 0 then

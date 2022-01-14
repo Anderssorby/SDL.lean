@@ -194,10 +194,20 @@ lean_obj_res lean_sdl_destroy_texture(b_lean_obj_arg l) {
 /*
 SDL.renderCopy (r: @& Renderer) (t: @& Texture): IO Unit
 */
-lean_obj_res lean_sdl_render_copy(b_lean_obj_arg r, b_lean_obj_arg t) {
+lean_obj_res lean_sdl_render_copy(b_lean_obj_arg r, b_lean_obj_arg t, b_lean_obj_arg o_src, b_lean_obj_arg o_dst) {
+  
   SDL_Renderer *renderer = lean_get_external_data(r);
   SDL_Texture *tex = lean_get_external_data(t);
   SDL_RenderCopy(renderer, tex, NULL, NULL);
+  return lean_io_result_mk_ok(lean_box(0));
+}
+
+/*
+SDL.setRenderDrawColor (r: @& Renderer) (r g b a : UInt8): IO Unit
+*/
+lean_obj_res lean_sdl_set_render_draw_color(b_lean_obj_arg ren, uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+  SDL_Renderer *renderer = lean_get_external_data(ren);
+  SDL_SetRenderDrawColor(renderer, r, g, b, a);
   return lean_io_result_mk_ok(lean_box(0));
 }
 
@@ -215,6 +225,54 @@ SDL.getError : IO String
 */
 lean_obj_res lean_sdl_get_error() {
   return lean_io_result_mk_ok(lean_mk_string(SDL_GetError()));
+}
+
+// SDL_Point
+
+static lean_external_class *g_sdl_point_class = NULL;
+
+static void sdl_point_finalizer(void *ptr) { 
+  free(ptr);
+}
+
+static lean_external_class *get_sdl_point_class() {
+  if (g_sdl_point_class == NULL) {
+    g_sdl_point_class = lean_register_external_class(
+        &sdl_point_finalizer, &noop_foreach);
+  }
+  return g_sdl_point_class;
+}
+
+/*
+SDL.mkSDL_Point (x y : UInt32) : SDL_Point
+*/
+lean_obj_res lean_sdl_mk_sdl_point(uint32_t x, uint32_t y) {
+  SDL_Point *p = {x, y};
+  return lean_alloc_external(get_sdl_point_class(), p);
+}
+
+// SDL_Rect
+
+static lean_external_class *g_sdl_rect_class = NULL;
+
+static void sdl_rect_finalizer(void *ptr) { 
+  free(ptr);
+}
+
+static lean_external_class *get_sdl_rect_class() {
+  if (g_sdl_rect_class == NULL) {
+    g_sdl_rect_class = lean_register_external_class(
+        &sdl_rect_finalizer, &noop_foreach);
+  }
+  return g_sdl_rect_class;
+}
+
+/*
+SDL.mkSDL_Rect (x y w h : UInt32) : SDL_Rect
+*/
+lean_obj_res lean_sdl_mk_sdl_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h) {
+  SDL_Rect *p = {x, y, w, h};
+  return lean_alloc_external(get_sdl_rect_class(), p);
 }
 
 /*
