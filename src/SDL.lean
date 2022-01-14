@@ -28,7 +28,7 @@ constant createWindow : (name : String) → (height : UInt32) → (width : UInt3
 After this the window can no longer be used.
 -/
 @[extern "lean_sdl_destroy_window"]
-constant destroyWindow : (r : Window) → IO Unit
+constant destroyWindow : (r : @& Window) → IO Unit
 
 
 constant RendererP : PointedType
@@ -44,7 +44,7 @@ constant createRenderer : (w : @& Window) → IO Renderer
 After this the renderer can no longer be used.
 -/
 @[extern "lean_sdl_destroy_renderer"]
-constant destroyRenderer : (r : Renderer) → IO Unit
+constant destroyRenderer : (r : @& Renderer) → IO Unit
 
 
 constant SurfaceP : PointedType
@@ -57,7 +57,7 @@ instance : Inhabited Surface := ⟨SurfaceP.val⟩
 constant loadBMP : (file : @& String) → IO Surface
 
 @[extern "lean_sdl_free_surface"]
-constant freeSurface : (s : Surface) → IO Unit
+constant freeSurface : (s : @& Surface) → IO Unit
 
 constant TextureP : PointedType
 
@@ -72,7 +72,7 @@ constant createTextureFromSurface : (r: @& Renderer) → (s : @& Surface) → IO
 After this the texture can no longer be used.
 -/
 @[extern "lean_sdl_destroy_texture"]
-constant destroyTexture : (t : Texture) → IO Unit
+constant destroyTexture : (t : @& Texture) → IO Unit
 
 @[extern "lean_sdl_render_copy"]
 constant renderCopy : (r: @& Renderer) → (t : @& Texture) → IO Unit

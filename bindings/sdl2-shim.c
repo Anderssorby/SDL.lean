@@ -21,8 +21,9 @@ lean_obj_res lean_sdl_init() {
 /*
 SDL.quit : IO Unit
 */
-void lean_sdl_quit() {
+lean_obj_res lean_sdl_quit() {
   SDL_Quit();
+  return lean_io_result_mk_ok(lean_box(0));
 }
 
 static inline lean_obj_res lean_exclusive_or_copy(lean_obj_arg a, lean_obj_res (*copy_fun)(lean_obj_arg)) {
@@ -38,8 +39,7 @@ inline static void noop_foreach(void *mod, b_lean_obj_arg fn) {}
 static lean_external_class *g_sdl_window_class = NULL;
 
 static void sdl_window_finalizer(void *ptr) { 
-  // SDL_DestroyWindow(ptr);
-  free(ptr);
+  SDL_DestroyWindow(ptr);
 }
 
 static lean_external_class *get_sdl_window_class() {
@@ -67,8 +67,9 @@ lean_obj_res lean_sdl_create_window(lean_obj_arg l_name, uint32_t width, uint32_
 /*
 SDL.destroyWindow (w : Window) : IO Unit
 */
-void lean_sdl_destroy_window(lean_obj_arg l) {
+lean_obj_res lean_sdl_destroy_window(lean_obj_arg l) {
   SDL_DestroyWindow(lean_get_external_data(l));
+  return lean_io_result_mk_ok(lean_box(0));
 }
 
 // static inline lean_obj_res sdl_window_copy(lean_object *self) {
@@ -88,8 +89,7 @@ void lean_sdl_destroy_window(lean_obj_arg l) {
 static lean_external_class *g_sdl_renderer_class = NULL;
 
 static void sdl_renderer_finalizer(void *ptr) { 
-  // SDL_DestroyRenderer(ptr);
-  free(ptr);
+  SDL_DestroyRenderer(ptr);
 }
 
 static lean_external_class *get_sdl_renderer_class() {
@@ -127,8 +127,7 @@ void lean_sdl_destroy_renderer(lean_obj_arg l) {
 static lean_external_class *g_sdl_surface_class = NULL;
 
 static void sdl_surface_finalizer(void *ptr) { 
-  // SDL_DestroySurface(ptr);
-  free(ptr);
+  SDL_FreeSurface(ptr);
 }
 
 static lean_external_class *get_sdl_surface_class() {
@@ -152,8 +151,9 @@ lean_obj_res lean_sdl_load_bmp(b_lean_obj_arg file) {
 /*
 SDL.freeSurface (s: Surface): IO Unit
 */
-void lean_sdl_free_surface(lean_obj_arg surface) {
+lean_obj_res lean_sdl_free_surface(b_lean_obj_arg surface) {
   SDL_FreeSurface(lean_get_external_data(surface));
+  return lean_io_result_mk_ok(lean_box(0));
 }
 
 // SDL_Texture
@@ -161,8 +161,7 @@ void lean_sdl_free_surface(lean_obj_arg surface) {
 static lean_external_class *g_sdl_texture_class = NULL;
 
 static void sdl_texture_finalizer(void *ptr) { 
-  // SDL_Destroytexture(ptr);
-  free(ptr);
+  SDL_DestroyTexture(ptr);
 }
 
 static lean_external_class *get_sdl_texture_class() {
@@ -180,24 +179,26 @@ lean_obj_res lean_sdl_create_texture_from_surface(b_lean_obj_arg r, b_lean_obj_a
   SDL_Renderer *renderer = lean_get_external_data(r);
   SDL_Surface *surf = lean_get_external_data(s);
   SDL_Texture *t = SDL_CreateTextureFromSurface(renderer, surf);
-  lean_object *lean_t = lean_alloc_external(get_sdl_surface_class(), t);
+  lean_object *lean_t = lean_alloc_external(get_sdl_texture_class(), t);
   return lean_io_result_mk_ok(lean_t);
 }
 
 /*
 SDL.destroyTexture (t : Texture) : IO Unit
 */
-void lean_sdl_destroy_texture(lean_obj_arg l) {
+lean_obj_res lean_sdl_destroy_texture(b_lean_obj_arg l) {
   SDL_DestroyTexture(lean_get_external_data(l));
+  return lean_io_result_mk_ok(lean_box(0));
 }
 
 /*
 SDL.renderCopy (r: @& Renderer) (t: @& Texture): IO Unit
 */
-void lean_sdl_render_copy(b_lean_obj_arg r, b_lean_obj_arg t) {
+lean_obj_res lean_sdl_render_copy(b_lean_obj_arg r, b_lean_obj_arg t) {
   SDL_Renderer *renderer = lean_get_external_data(r);
   SDL_Texture *tex = lean_get_external_data(t);
   SDL_RenderCopy(renderer, tex, NULL, NULL);
+  return lean_io_result_mk_ok(lean_box(0));
 }
 
 /*
@@ -206,6 +207,7 @@ SDL.renderPresent (r: @& Renderer): IO Unit
 lean_obj_res lean_sdl_render_present(b_lean_obj_arg r) {
   SDL_Renderer *renderer = lean_get_external_data(r);
   SDL_RenderPresent(renderer);
+  return lean_io_result_mk_ok(lean_box(0));
 }
 
 /*
@@ -216,8 +218,9 @@ lean_obj_res lean_sdl_get_error() {
 }
 
 /*
-S)DL.delay (ms : UInt32) : IO Unit
+SDL.delay (ms : UInt32) : IO Unit
 */
-void lean_sdl_delay(uint32_t ms) {
+lean_obj_res lean_sdl_delay(uint32_t ms) {
   SDL_Delay(ms);
+  return lean_io_result_mk_ok(lean_box(0));
 }

@@ -27,7 +27,7 @@
       let
         leanPkgs = lean.packages.${system};
         pkgs = nixpkgs.legacyPackages.${system};
-        inherit (lib.${system}) buildCLib concatStringsSep;
+        inherit (lib.${system}) buildCLib concatStringsSep makeOverridable;
         includes = [
           "${pkgs.SDL2.dev}/include"
           "${pkgs.SDL2.dev}/include/SDL2"
@@ -56,14 +56,14 @@
           };
         };
         name = "SDL";  # must match the name of the top-level .lean file
-        project = leanPkgs.buildLeanPackage
+        project = makeOverridable leanPkgs.buildLeanPackage
           {
             inherit name;
             # Where the lean files are located
             nativeSharedLibs = [ (libsdl2 // { __toString = d: "${libsdl2}/lib"; }) c-shim ];
             src = ./src;
           };
-        test = leanPkgs.buildLeanPackage
+        test = makeOverridable leanPkgs.buildLeanPackage
           {
             name = "Tests";
             deps = [ project ];
@@ -79,7 +79,8 @@
         packages = {
           ${name} = project.sharedLib;
           test = test.executable;
-          debug-test = withGdb test.executable;
+          debug-test = (test.overrideArgs {debug = true;}).executable;
+          gdb-test = withGdb self.packages.${system}.debug-test;
         };
 
         checks.test = test.executable;
