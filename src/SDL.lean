@@ -56,6 +56,17 @@ instance : Inhabited Surface := ⟨SurfaceP.val⟩
 @[extern "lean_sdl_load_bmp"]
 constant loadBMP : (file : @& String) → IO Surface
 
+/-
+Load an image as a surface.
+
+IMG_Load() from SDL_image.
+-/
+@[extern "lean_sdl_load_image"]
+constant loadImage : (file : @& String) → IO Surface
+
+/-
+Manually free a surface. This is done automatically otherwise.
+-/
 @[extern "lean_sdl_free_surface"]
 constant freeSurface : (s : @& Surface) → IO Unit
 

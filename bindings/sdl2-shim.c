@@ -9,6 +9,18 @@
  */
 extern int SDLCALL SDL_Init(Uint32 flags);
 
+/**
+ * Unwrap an Option of an external object as data for some
+ * or NULL for none. Unsafe.
+ */
+void *lean_option_unwrap(b_lean_obj_arg a) {
+  if (lean_is_scalar(a)) {
+    return NULL;
+  } else {
+    lean_object *some_val = lean_ctor_get(a, 0);
+    return lean_get_external_data(some_val);      
+  }
+}
 
 /*
 SDL.init : IO Int
@@ -72,18 +84,6 @@ lean_obj_res lean_sdl_destroy_window(lean_obj_arg l) {
   return lean_io_result_mk_ok(lean_box(0));
 }
 
-// static inline lean_obj_res sdl_window_copy(lean_object *self) {
-// #ifdef DEBUG
-//   printf("lean_sdl_window_copy");
-// #endif
-//   assert(lean_get_external_class(self) == get_sdl_window_class());
-//   SDL_Window *a = (SDL_Window *) lean_get_external_data(self);
-//   SDL_Window *copy = malloc(sizeof(struct SDL_Window));
-//   *copy = *a;
-
-//   return lean_alloc_external(get_sdl_window_class(), copy);
-// }
-
 // SDL_Renderer
 
 static lean_external_class *g_sdl_renderer_class = NULL;
@@ -143,6 +143,16 @@ SDL.loadBMP (file: @& String): IO Surface
 */
 lean_obj_res lean_sdl_load_bmp(b_lean_obj_arg file) {
   SDL_Surface *s = SDL_LoadBMP(lean_string_cstr(file));
+
+  lean_object *lean_r = lean_alloc_external(get_sdl_surface_class(), s);
+  return lean_io_result_mk_ok(lean_r);
+}
+
+/*
+SDL.loadImage (file: @& String): IO Surface
+*/
+lean_obj_res lean_sdl_load_image(b_lean_obj_arg file) {
+  SDL_Surface *s = IMG_Load(lean_string_cstr(file));
 
   lean_object *lean_r = lean_alloc_external(get_sdl_surface_class(), s);
   return lean_io_result_mk_ok(lean_r);
@@ -248,7 +258,7 @@ static lean_external_class *get_sdl_point_class() {
 SDL.mkSDL_Point (x y : UInt32) : SDL_Point
 */
 lean_obj_res lean_sdl_mk_sdl_point(uint32_t x, uint32_t y) {
-  SDL_Point *p = {x, y};
+  SDL_Point *p = &(struct SDL_Point) {.x = x, .y = y};
   return lean_alloc_external(get_sdl_point_class(), p);
 }
 
@@ -272,7 +282,7 @@ static lean_external_class *get_sdl_rect_class() {
 SDL.mkSDL_Rect (x y w h : UInt32) : SDL_Rect
 */
 lean_obj_res lean_sdl_mk_sdl_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h) {
-  SDL_Rect *p = {x, y, w, h};
+  SDL_Rect *p = &(struct SDL_Rect) {.x = x, .y = y, .w = w, .h = h};
   return lean_alloc_external(get_sdl_rect_class(), p);
 }
 

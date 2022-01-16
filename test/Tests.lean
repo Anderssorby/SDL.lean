@@ -7,8 +7,13 @@ def animationTest : IO Unit := do
   let window ← SDL.createWindow "Animation" 800 500
   let renderer ← SDL.createRenderer window
   let surf ← SDL.loadBMP "images/green_nebula.bmp"
-  let tex ← SDL.createTextureFromSurface renderer surf
-  SDL.renderCopy renderer tex none none
+  let bgrd ← SDL.createTextureFromSurface renderer surf
+  let ex ← SDL.loadImage "images/explosion.png"
+  let explosion ← SDL.createTextureFromSurface renderer ex
+  SDL.renderCopy renderer bgrd none none
+  let mut src : SDL.Rect := { x := 0, y := 0, w := 128, h := 128 }
+  let mut dst : SDL.Rect := { x := 100, y := 100, w := 128, h := 128 }
+  SDL.renderCopy renderer explosion (some src) (some dst)
   SDL.renderPresent renderer
   SDL.delay 5000
   SDL.destroyWindow window
@@ -30,7 +35,11 @@ def bitmapTest : IO Unit := do
 
 def main (args : List String) : IO UInt32 := do
   try
-    bitmapTest
+    let test := args.getD 0 "bitmap"
+    match test with
+    | "bitmap" => bitmapTest
+    | "animation" => animationTest
+    | s => IO.eprintln s!"Unknown test {s}"
     pure 0
   catch e =>
     IO.eprintln <| "error: " ++ toString e

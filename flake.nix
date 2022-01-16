@@ -39,11 +39,17 @@
           "${leanPkgs.lean-bin-tools-unwrapped}/include"
         ];
         INCLUDE_PATH = concatStringsSep ":" includes;
-        libsdl2 = pkgs.SDL2.out // {
+        libSDL2 = pkgs.SDL2.out // {
           name = "lib/libSDL2.so";
           linkName = "SDL2";
           libName = "libSDL2.so";
           __toString = d: "${pkgs.SDL2.out}/lib";
+        };
+        libSDL2_image = pkgs.SDL2_image // {
+          name = "lib/libSDL2_image.so";
+          linkName = "SDL2_image";
+          libName = "libSDL2_image.so";
+          __toString = d: "${pkgs.SDL2_image}/lib";
         };
         hasPrefix =
           # Prefix to check for
@@ -54,13 +60,15 @@
             lenPrefix = builtins.stringLength prefix;
           in
           prefix == builtins.substring 0 lenPrefix content;
+        sharedLibDeps = [ libSDL2 libSDL2_image ];
         c-shim = buildCLib {
           updateCCOptions = d: d ++ (map (i: "-I${i}") includes);
           name = "lean-SDL2-bindings";
           sourceFiles = [ "bindings/*.c" ];
-          sharedLibDeps = [
-            libsdl2
-          ];
+          # sharedLibDeps = [
+          #   libSDL2_image
+          #   libSDL2
+          # ];
           src = builtins.filterSource
             (path: type: hasPrefix (toString ./. + "/bindings") path) ./.;
           extraDrvArgs = {
@@ -71,8 +79,9 @@
         project = makeOverridable leanPkgs.buildLeanPackage
           {
             inherit name;
+            # linkFlags = [ "-L${libSDL2_image}/lib" "-lSDL2_image" ];
             # Where the lean files are located
-            nativeSharedLibs = [ libsdl2 c-shim ];
+            nativeSharedLibs = sharedLibDeps ++ [ c-shim ];
             src = ./src;
           };
         test = makeOverridable leanPkgs.buildLeanPackage
@@ -95,7 +104,7 @@
             debug = true;
             deps =
             [ (project.override {
-                nativeSharedLibs = [ libsdl2 (c-shim.override { debug = true; }) ];
+                nativeSharedLibs = sharedLibDeps ++ [ (c-shim.override { debug = true; }) ];
               })
             ];
           }).executable;
