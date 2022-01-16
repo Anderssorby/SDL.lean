@@ -15,6 +15,9 @@ constant quit : IO Unit
 @[extern "lean_sdl_get_error"]
 constant getError : IO String
 
+@[extern "lean_sdl_get_img_error"]
+constant getIMGError : IO String
+
 constant WindowP : PointedType
 
 def Window := WindowP.type
@@ -91,9 +94,13 @@ structure Rect where
   h : UInt32
   w : UInt32
 
+instance : ToString Rect := ⟨λ r => s!"Rect [x = {r.x}, y = {r.y}, w = {r.w}, h = {r.h}]"⟩
+
 structure Point where
   x : UInt32
   y : UInt32
+
+instance : ToString Point := ⟨λ p => s!"Point [x = {p.x}, y = {p.y}]"⟩
 
 constant SDL_RectP : PointedType
 
@@ -122,8 +129,23 @@ def toSDL_Point (p : Point) : SDL_Point :=
 @[extern "lean_sdl_render_copy"]
 def renderCopy (r: @& Renderer) (t : @& Texture) (src dest : @& Option SDL_Rect := none) : IO Unit := ()
 
+@[extern "lean_sdl_render_fill_rect"]
+def renderFillRect (r: @& Renderer) (rect : @& SDL_Rect) : IO Unit := ()
+
+@[extern "lean_sdl_render_draw_rect"]
+def renderDrawRect (r: @& Renderer) (rect : @& SDL_Rect) : IO Unit := ()
+
+/-
+Display the result of previous commands.
+-/
 @[extern "lean_sdl_render_present"]
 constant renderPresent : (r: @& Renderer) → IO Unit
+
+/-
+Clear the renderer with the current draw color.
+-/
+@[extern "lean_sdl_render_clear"]
+constant renderClear : (r: @& Renderer) → IO Unit
 
 structure Color where
   r : UInt8

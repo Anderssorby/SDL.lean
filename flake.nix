@@ -92,7 +92,7 @@
             src = ./test;
           };
         joinDepsDerivationns = getSubDrv:
-          pkgs.lib.concatStringsSep ":" (map (d: "${getSubDrv d}") ([ project ] ++ project.allExternalDeps));
+          pkgs.lib.concatStringsSep ":" (map (d: "${getSubDrv d}") ([ ] ++ project.allExternalDeps));
         withGdb = bin: pkgs.writeShellScriptBin "${bin.name}-with-gdb" "${pkgs.gdb}/bin/gdb ${bin}/bin/${bin.name}";
       in
       {
@@ -103,11 +103,11 @@
           debug-test = (test.overrideArgs {
             debug = true;
             deps =
-            [ (project.override {
+            [ ((project.override {
                 nativeSharedLibs = sharedLibDeps ++ [ (c-shim.override { debug = true; }) ];
-              })
+              }) )
             ];
-          }).executable;
+          }).executable // { allowSubstitutes = false; };
           gdb-test = withGdb self.packages.${system}.debug-test;
         };
 
