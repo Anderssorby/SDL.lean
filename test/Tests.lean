@@ -11,8 +11,8 @@ def animationTest : IO Unit := do
   let ex ← SDL.loadImage "images/explosion.png"
   let explosion ← SDL.createTextureFromSurface renderer ex
   SDL.renderCopy renderer bgrd none none
-  let mut src : SDL.Rect := { x := 0, y := 0, w := 128, h := 128 }
-  let mut dst : SDL.Rect := { x := 100, y := 100, w := 128, h := 128 }
+  let mut src := SDL.toSDL_Rect { x := 0, y := 0, w := 128, h := 128 }
+  let mut dst := SDL.toSDL_Rect { x := 100, y := 100, w := 128, h := 128 }
   SDL.renderCopy renderer explosion (some src) (some dst)
   SDL.renderPresent renderer
   SDL.delay 5000

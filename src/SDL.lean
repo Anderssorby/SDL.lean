@@ -104,9 +104,6 @@ instance : Inhabited SDL_Rect := ⟨SDL_RectP.val⟩
 @[extern "lean_sdl_mk_sdl_rect"]
 def mkSDL_Rect (x y w h : UInt32) : SDL_Rect := SDL_RectP.val
 
-@[extern "lean_sdl_rect_null"]
-constant SDL_Rect_NULL (u : Unit) : SDL_Rect
-
 def toSDL_Rect (r : Rect) : SDL_Rect :=
   mkSDL_Rect r.x r.y r.w r.w
 
@@ -123,18 +120,7 @@ def toSDL_Point (p : Point) : SDL_Point :=
   mkSDL_Point p.x p.y
 
 @[extern "lean_sdl_render_copy"]
-private def renderCopyNative (r: @& Renderer) (t : @& Texture) (src dest : @& SDL_Rect) : IO Unit := ()
-
-def renderCopy (r: @& Renderer) (t : @& Texture) (src dest : @& Option Rect := none) : IO Unit :=
-  let s := if let some r := src then
-    toSDL_Rect r
-  else
-    SDL_Rect_NULL ()
-  let d := if let some r := dest then
-    toSDL_Rect r
-  else
-    SDL_Rect_NULL ()
-  renderCopyNative r t s d
+def renderCopy (r: @& Renderer) (t : @& Texture) (src dest : @& Option SDL_Rect := none) : IO Unit := ()
 
 @[extern "lean_sdl_render_present"]
 constant renderPresent : (r: @& Renderer) → IO Unit
