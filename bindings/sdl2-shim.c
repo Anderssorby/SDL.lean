@@ -336,3 +336,249 @@ lean_obj_res lean_sdl_delay(uint32_t ms) {
   SDL_Delay(ms);
   return lean_io_result_mk_ok(lean_box(0));
 }
+
+// Events
+
+// SDL_Event
+
+static lean_external_class *g_sdl_event_class = NULL;
+
+static void sdl_event_finalizer(void *ptr) { 
+  free(ptr);
+}
+
+static lean_external_class *get_sdl_event_class() {
+  if (g_sdl_event_class == NULL) {
+    g_sdl_event_class = lean_register_external_class(
+        &sdl_event_finalizer, &noop_foreach);
+  }
+  return g_sdl_event_class;
+}
+
+/*
+SDL.pollEvent : IO SDL_Event
+*/
+lean_obj_res lean_sdl_poll_event() {
+  SDL_Event *event;
+  int b = SDL_PollEvent(event);
+  return lean_io_result_mk_ok(lean_alloc_external(get_sdl_event_class(), event));
+}
+
+
+// Application events
+
+uint32_t lean_SDL_QUIT() {
+  return SDL_QUIT;
+}
+
+// Android, iOS and WinRT events; see Remarks for details
+
+uint32_t lean_SDL_APP_TERMINATING() {
+  return SDL_APP_TERMINATING;
+}
+
+uint32_t lean_SDL_APP_LOWMEMORY() {
+  return SDL_APP_LOWMEMORY;
+}
+
+uint32_t lean_SDL_APP_WILLENTERBACKGROUND() {
+  return SDL_APP_WILLENTERBACKGROUND;
+}
+
+uint32_t lean_SDL_APP_DIDENTERBACKGROUND() {
+  return SDL_APP_DIDENTERBACKGROUND;
+}
+
+uint32_t lean_SDL_APP_WILLENTERFOREGROUND() {
+  return SDL_APP_WILLENTERFOREGROUND;
+}
+
+uint32_t lean_SDL_APP_DIDENTERFOREGROUND() {
+  return SDL_APP_DIDENTERFOREGROUND;
+}
+
+// Window events
+
+uint32_t lean_SDL_WINDOWEVENT() {
+  return SDL_WINDOWEVENT;
+}
+
+uint32_t lean_SDL_SYSWMEVENT() {
+  return SDL_SYSWMEVENT;
+}
+
+// Keyboard events
+
+uint32_t lean_SDL_KEYDOWN() {
+  return SDL_KEYDOWN;
+}
+
+uint32_t lean_SDL_KEYUP() {
+  return SDL_KEYUP;
+}
+
+uint32_t lean_SDL_TEXTEDITING() {
+  return SDL_TEXTEDITING;
+}
+
+uint32_t lean_SDL_TEXTINPUT() {
+  return SDL_TEXTINPUT;
+}
+
+uint32_t lean_SDL_KEYMAPCHANGED() {
+  return SDL_KEYMAPCHANGED;
+}
+
+// Mouse events
+
+uint32_t lean_SDL_MOUSEMOTION() {
+  return SDL_MOUSEMOTION;
+}
+
+uint32_t lean_SDL_MOUSEBUTTONDOWN() {
+  return SDL_MOUSEBUTTONDOWN;
+}
+
+uint32_t lean_SDL_MOUSEBUTTONUP() {
+  return SDL_MOUSEBUTTONUP;
+}
+
+uint32_t lean_SDL_MOUSEWHEEL() {
+  return SDL_MOUSEWHEEL;
+}
+
+// Joystick events
+
+uint32_t lean_SDL_JOYAXISMOTION() {
+  return SDL_JOYAXISMOTION;
+}
+
+uint32_t lean_SDL_JOYBALLMOTION() {
+  return SDL_JOYBALLMOTION;
+}
+
+uint32_t lean_SDL_JOYHATMOTION() {
+  return SDL_JOYHATMOTION;
+}
+
+uint32_t lean_SDL_JOYBUTTONDOWN() {
+  return SDL_JOYBUTTONDOWN;
+}
+
+uint32_t lean_SDL_JOYBUTTONUP() {
+  return SDL_JOYBUTTONUP;
+}
+
+uint32_t lean_SDL_JOYDEVICEADDED() {
+  return SDL_JOYDEVICEADDED;
+}
+
+uint32_t lean_SDL_JOYDEVICEREMOVED() {
+  return SDL_JOYDEVICEREMOVED;
+}
+
+// Controller events
+
+uint32_t lean_SDL_CONTROLLERAXISMOTION() {
+  return SDL_CONTROLLERAXISMOTION;
+}
+
+uint32_t lean_SDL_CONTROLLERBUTTONDOWN() {
+  return SDL_CONTROLLERBUTTONDOWN;
+}
+
+uint32_t lean_SDL_CONTROLLERBUTTONUP() {
+  return SDL_CONTROLLERBUTTONUP;
+}
+
+uint32_t lean_SDL_CONTROLLERDEVICEADDED() {
+  return SDL_CONTROLLERDEVICEADDED;
+}
+
+uint32_t lean_SDL_CONTROLLERDEVICEREMOVED() {
+  return SDL_CONTROLLERDEVICEREMOVED;
+}
+
+uint32_t lean_SDL_CONTROLLERDEVICEREMAPPED() {
+  return SDL_CONTROLLERDEVICEREMAPPED;
+}
+
+// Touch events
+
+uint32_t lean_SDL_FINGERDOWN() {
+  return SDL_FINGERDOWN;
+}
+
+uint32_t lean_SDL_FINGERUP() {
+  return SDL_FINGERUP;
+}
+
+uint32_t lean_SDL_FINGERMOTION() {
+  return SDL_FINGERMOTION;
+}
+
+// Gesture events
+
+uint32_t lean_SDL_DOLLARGESTURE() {
+  return SDL_DOLLARGESTURE;
+}
+
+uint32_t lean_SDL_DOLLARRECORD() {
+  return SDL_DOLLARRECORD;
+}
+
+uint32_t lean_SDL_MULTIGESTURE() {
+  return SDL_MULTIGESTURE;
+}
+
+uint32_t lean_SDL_CLIPBOARDUPDATE() {
+  return SDL_CLIPBOARDUPDATE;
+}
+
+// Drag and drop events
+
+uint32_t lean_SDL_DROPFILE() {
+  return SDL_DROPFILE;
+}
+
+uint32_t lean_SDL_DROPTEXT() {
+  return SDL_DROPTEXT;
+}
+
+uint32_t lean_SDL_DROPBEGIN() {
+  return SDL_DROPBEGIN;
+}
+
+uint32_t lean_SDL_DROPCOMPLETE() {
+  return SDL_DROPCOMPLETE;
+}
+
+// Audio hotplug events
+
+uint32_t lean_SDL_AUDIODEVICEADDED() {
+  return SDL_AUDIODEVICEADDED;
+}
+
+uint32_t lean_SDL_AUDIODEVICEREMOVED() {
+  return SDL_AUDIODEVICEREMOVED;
+}
+
+// Render events
+
+uint32_t lean_SDL_RENDER_TARGETS_RESET() {
+  return SDL_RENDER_TARGETS_RESET;
+}
+
+uint32_t lean_SDL_RENDER_DEVICE_RESET() {
+  return SDL_RENDER_DEVICE_RESET;
+}
+
+// These are for your use, and should be allocated with  SDL_RegisterEvents()
+
+uint32_t lean_SDL_USEREVENT() {
+  return SDL_USEREVENT;
+}
+
+uint32_t lean_SDL_LASTEVENT() {
+  return SDL_LASTEVENT;
+}
