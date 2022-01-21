@@ -5,15 +5,10 @@
 #include <SDL2/SDL_timer.h>
 
 /**
- *  This function initializes  the subsystems specified by \c flags
- */
-extern int SDLCALL SDL_Init(Uint32 flags);
-
-/**
  * Unwrap an Option of an external object as data for some
  * or NULL for none. Unsafe.
  */
-void *lean_option_unwrap(b_lean_obj_arg a) {
+static inline void *lean_option_unwrap(b_lean_obj_arg a) {
   if (lean_is_scalar(a)) {
     return NULL;
   } else {
@@ -22,8 +17,33 @@ void *lean_option_unwrap(b_lean_obj_arg a) {
   }
 }
 
-/*
-SDL.init : IO Int
+/**
+ * Option.some a
+ */
+static inline lean_object * lean_mk_option_some(lean_object * a) {
+  lean_object* tuple = lean_alloc_ctor(1, 1, 0);
+  lean_ctor_set(tuple, 0, a);
+  return tuple;
+}
+
+/**
+ * Option.none.
+ * Note that this is the same value for Unit and other constant constructors of inductives.
+ */
+static inline lean_object * lean_mk_option_none() {
+  return lean_box(0);
+}
+
+static inline lean_object * lean_mk_tuple2(lean_object * a, lean_object * b) {
+  lean_object* tuple = lean_alloc_ctor(0, 2, 0);
+  lean_ctor_set(tuple, 0, a);
+  lean_ctor_set(tuple, 1, b);
+  return tuple;
+}
+
+/**
+ * This function initializes  the subsystems specified by \c flags
+ * SDL.init : IO Int
 */
 lean_obj_res lean_sdl_init() {
   int res = SDL_Init(SDL_INIT_EVERYTHING);
@@ -350,20 +370,28 @@ static void sdl_event_finalizer(void *ptr) {
 static lean_external_class *get_sdl_event_class() {
   if (g_sdl_event_class == NULL) {
     g_sdl_event_class = lean_register_external_class(
-        &sdl_event_finalizer, &noop_foreach);
+        &sdl_event_finalizer, &noop_foreach
+    );
   }
   return g_sdl_event_class;
 }
 
 /*
-SDL.pollEvent : IO SDL_Event
+SDL.pollEvent : IO $ Prod Bool (Option SDL_Event)
 */
 lean_obj_res lean_sdl_poll_event() {
-  SDL_Event *event;
-  int b = SDL_PollEvent(event);
-  return lean_io_result_mk_ok(lean_alloc_external(get_sdl_event_class(), event));
+  SDL_Event *event = malloc(sizeof(SDL_Event));
+  uint8_t b = (uint8_t) SDL_PollEvent(event);
+  lean_object* tuple;
+  if (b && event != NULL) {
+    lean_object* e = lean_alloc_external(get_sdl_event_class(), event);
+    // Constructs a (Bool, some SDL_Event) tuple
+    tuple = lean_mk_tuple2(lean_box(b), lean_mk_option_some(e));
+  } else {
+    tuple = lean_mk_tuple2(lean_box(b), lean_mk_option_none());
+  }
+  return lean_io_result_mk_ok(tuple);
 }
-
 
 // Application events
 
@@ -581,4 +609,38 @@ uint32_t lean_SDL_USEREVENT() {
 
 uint32_t lean_SDL_LASTEVENT() {
   return SDL_LASTEVENT;
+}
+
+/*
+SDL.SDL_Event.type (s : @& SDL_Event) : UInt32
+*/
+uint32_t lean_sdl_event_type(b_lean_obj_arg s){
+  SDL_Event *event = lean_get_external_data(s);
+#ifdef DEBUG
+  printf("event %p\n type %d", event);
+#endif
+  if (event != NULL) {
+    return event->type;
+  }
+#ifdef DEBUG
+  printf("WARNING event is NULL");
+#endif
+  return 0;
+}
+
+/*
+SDL.Event.toKeyboardEventData (s : @& SDL_Event) : Array UInt32
+*/
+lean_obj_res lean_sdl_event_to_keyboard_event_data(b_lean_obj_arg s){
+  SDL_Event * event = lean_get_external_data(s);
+  lean_object * arr = lean_mk_empty_array_with_capacity(7);
+  lean_array_push(arr, lean_box(event->key.timestamp));
+  lean_array_push(arr, lean_box(event->key.windowID));
+  lean_array_push(arr, lean_box(event->key.state));
+  lean_array_push(arr, lean_box(event->key.repeat));
+  lean_array_push(arr, lean_box(event->key.keysym.scancode));
+  lean_array_push(arr, lean_box(event->key.keysym.sym));
+  lean_array_push(arr, lean_box(event->key.keysym.mod));
+
+  return arr;
 }

@@ -75,6 +75,10 @@
             linkName = "lean-SDL2-bindings";
           };
         };
+        c-shim-debug = c-shim.override {
+          debug = true;
+          updateCCOptions = d: d ++ (map (i: "-I${i}") includes) ++ [ "-O0" ];
+        };
         name = "SDL";  # must match the name of the top-level .lean file
         project = makeOverridable leanPkgs.buildLeanPackage
           {
@@ -103,9 +107,9 @@
           debug-test = (test.overrideArgs {
             debug = true;
             deps =
-            [ ((project.override {
-                nativeSharedLibs = sharedLibDeps ++ [ (c-shim.override { debug = true; }) ];
-              }) )
+            [ (project.override {
+                nativeSharedLibs = sharedLibDeps ++ [ c-shim-debug ];
+              })
             ];
           }).executable // { allowSubstitutes = false; };
           gdb-test = withGdb self.packages.${system}.debug-test;

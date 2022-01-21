@@ -1,9 +1,14 @@
 namespace SDL
 
+structure KeyboardEvent where
+  timestamp : UInt32
+  key : Char
+  
+
 inductive Event
   | commonEvent -- common, common event data
   | windowEvent -- window, window event data
-  | keyboardEvent -- key, keyboard event data
+  | keyboardEvent : KeyboardEvent → Event -- key, keyboard event data
   | textEditingEvent -- edit, text editing event data
   | textInputEvent -- text, text input event data
   | mouseMotionEvent -- motion, mouse motion event data
@@ -33,7 +38,7 @@ def SDL_Event := SDL_EventP.type
 instance : Inhabited SDL_Event := ⟨SDL_EventP.val⟩
 
 @[extern "lean_sdl_poll_event"]
-constant pollEvent : IO SDL_Event
+constant pollEvent : IO (Bool × Option SDL_Event)
 
 namespace Event.Type
 
@@ -257,5 +262,36 @@ private constant _SDL_LASTEVENT (u : Unit) : UInt32 -- only for bounding interna
 def SDL_LASTEVENT: UInt32 := _SDL_LASTEVENT ()
 
 end Event.Type
+
+@[extern "lean_sdl_event_type"]
+constant SDL_Event.type (s : @& SDL_Event) : UInt32
+
+/-
+Extract an Array of the fields of the SDL_KeyboardEvent.
+-/
+@[extern "lean_sdl_event_to_keyboard_event_data"]
+private constant SDL_Event.toKeyboardEventData (s : @& SDL_Event) : Array UInt32
+
+open Event.Type in
+def SDL_Event.toEvent (s : SDL_Event) : Event :=
+  let type := s.type
+  if type = SDL_QUIT then
+    Event.quitEvent
+  else if type = SDL_KEYDOWN then
+    let d := s.toKeyboardEventData
+    let timestamp := d.get! 0
+    Event.keyboardEvent { key := ' ', timestamp : KeyboardEvent }
+  else
+    Event.userEvent
+
+def Event.next : IO <| Option Event := do
+  let (hasNext, opt_sdl_event) ← SDL.pollEvent
+  if hasNext then
+    println! "hasNext {hasNext}"
+    return (SDL_Event.toEvent <$> opt_sdl_event)
+  else
+    println! "has no next"
+    return none
+
 
 end SDL
