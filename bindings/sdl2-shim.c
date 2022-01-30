@@ -656,3 +656,39 @@ lean_obj_res lean_sdl_event_to_mouse_motion_event_data(lean_obj_arg s) {
 
   return tuple;
 }
+
+/*
+SDL.Event.toMouseButtonEventData (s : @& SDL_Event) : (UInt32 × UInt32 × UInt32 × UInt8 × UInt8 × UInt8 × UInt32 × UInt32)
+*/
+lean_obj_res lean_sdl_event_to_mouse_button_event_data(lean_obj_arg s) {
+  SDL_Event * event = lean_get_external_data(s);
+  lean_object * tuple = lean_mk_tuple2(
+    lean_box(event->button.timestamp),
+    lean_mk_tuple2(lean_box(event->button.windowID),
+    lean_mk_tuple2(lean_box(event->button.which),
+    lean_mk_tuple2(lean_box(event->button.button),
+    lean_mk_tuple2(lean_box(event->button.state),
+    lean_mk_tuple2(lean_box(event->button.clicks),
+    lean_mk_tuple2(lean_box(event->button.x),
+    lean_box(event->button.y)
+  )))))));
+
+  return tuple;
+}
+
+/*
+SDL.Event.toMouseWheelEventData (s : @& SDL_Event) : (UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32)
+*/
+lean_obj_res lean_sdl_event_to_mouse_wheel_event_data(lean_obj_arg s) {
+  SDL_Event * event = lean_get_external_data(s);
+  lean_object * tuple = lean_mk_tuple2(
+    lean_box(event->wheel.timestamp),
+    lean_mk_tuple2(lean_box(event->wheel.windowID),
+    lean_mk_tuple2(lean_box(event->wheel.which),
+    lean_mk_tuple2(lean_box(event->wheel.x),
+    lean_mk_tuple2(lean_box(event->wheel.y),
+    lean_box(event->wheel.direction)
+  )))));
+
+  return tuple;
+}

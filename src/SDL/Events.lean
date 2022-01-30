@@ -20,6 +20,24 @@ structure MouseMotionEvent where
   xrel : UInt32
   yrel : UInt32
 
+structure MouseButtonEvent where
+  type : UInt32
+  timestamp : UInt32
+  windowId : UInt32
+  which : UInt32
+  button : UInt8
+  state : UInt8
+  clicks : UInt8
+  point : Point
+
+structure MouseWheelEvent where
+  timestamp : UInt32
+  windowId : UInt32
+  which : UInt32
+  x : UInt32
+  y : UInt32
+  direction : UInt32
+
 structure UserEvent where
   type : UInt32
 
@@ -30,8 +48,8 @@ inductive Event
   | textEditingEvent -- edit, text editing event data
   | textInputEvent -- text, text input event data
   | mouseMotionEvent : MouseMotionEvent → Event -- motion, mouse motion event data
-  | mouseButtonEvent -- button, mouse button event data
-  | mouseWheelEvent -- wheel, mouse wheel event data
+  | mouseButtonEvent : MouseButtonEvent → Event -- button, mouse button event data
+  | mouseWheelEvent : MouseWheelEvent → Event -- wheel, mouse wheel event data
   | joyAxisEvent -- jaxis, joystick axis event data
   | joyBallEvent -- jball, joystick ball event data
   | joyHatEvent -- jhat, joystick hat event data
@@ -60,8 +78,8 @@ instance : ToString Event where
   | textEditingEvent => "SDL_TextEditingEvent" 
   | textInputEvent => "SDL_TextInputEvent"
   | mouseMotionEvent mme => "SDL_MouseMotionEvent"
-  | mouseButtonEvent => "SDL_MouseButton"
-  | mouseWheelEvent => "SDL_MouseWheelEvent"    
+  | mouseButtonEvent _ => "SDL_MouseButton"
+  | mouseWheelEvent _ => "SDL_MouseWheelEvent"
   | joyAxisEvent => "SDL_JoyAxisEvent"
   | joyBallEvent => "SDL_JoyBallEvent"
   | joyHatEvent => "SDL_JoyHatEvent"
@@ -322,11 +340,25 @@ Returns (timestamp, windowId, state, repeat, scancode, sym, mod).
 protected constant SDL_Event.toKeyboardEventData (s : @& SDL_Event) : (UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32)
 
 /-
-Extract a tuple of the fields of the SDL_KeyboardEvent.
+Extract a tuple of the fields of the SDL_MouseMotionEvent.
 Returns (timestamp, windowId, which, state, x, y, xrel, yrel).
 -/
 @[extern "lean_sdl_event_to_mouse_motion_event_data"]
 protected constant SDL_Event.toMouseMotionEventData (s : @& SDL_Event) : (UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32)
+
+/-
+Extract a tuple of the fields of the SDL_MouseButtonEvent.
+Returns (timestamp, windowId, which, button, state, clicks, x, y).
+-/
+@[extern "lean_sdl_event_to_mouse_button_event_data"]
+protected constant SDL_Event.toMouseButtonEventData (s : @& SDL_Event) : (UInt32 × UInt32 × UInt32 × UInt8 × UInt8 × UInt8 × UInt32 × UInt32)
+
+/-
+Extract a tuple of the fields of the SDL_MouseWheelEvent.
+Returns (timestamp, windowId, which, x, y, direction).
+-/
+@[extern "lean_sdl_event_to_mouse_wheel_event_data"]
+protected constant SDL_Event.toMouseWheelEventData (s : @& SDL_Event) : (UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32)
 
 open Event.Type in
 def SDL_Event.toEvent (s : SDL_Event) : Event :=
@@ -339,6 +371,12 @@ def SDL_Event.toEvent (s : SDL_Event) : Event :=
   else if type = SDL_MOUSEMOTION then
     let (timestamp, windowId, which, state, x, y, xrel, yrel) := s.toMouseMotionEventData
     Event.mouseMotionEvent { timestamp, windowId, which, state, point := { x, y : Point}, xrel, yrel : MouseMotionEvent }
+  else if type = SDL_MOUSEBUTTONDOWN ∨ type = SDL_MOUSEBUTTONUP then
+    let (timestamp, windowId, which, button, state, clicks, x, y) := s.toMouseButtonEventData
+    Event.mouseButtonEvent { type, timestamp, windowId, which, button, state, clicks, point := {x, y} : MouseButtonEvent }
+  else if type = SDL_MOUSEWHEEL then
+    let (timestamp, windowId, which, x, y, direction) := s.toMouseWheelEventData
+    Event.mouseWheelEvent { timestamp, windowId, which, x, y, direction : MouseWheelEvent }
   else
     Event.userEvent { type : UserEvent }
 
