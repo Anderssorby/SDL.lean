@@ -5,15 +5,10 @@
 #include <SDL2/SDL_timer.h>
 
 /**
- *  This function initializes  the subsystems specified by \c flags
- */
-extern int SDLCALL SDL_Init(Uint32 flags);
-
-/**
  * Unwrap an Option of an external object as data for some
  * or NULL for none. Unsafe.
  */
-void *lean_option_unwrap(b_lean_obj_arg a) {
+static inline void *lean_option_unwrap(b_lean_obj_arg a) {
   if (lean_is_scalar(a)) {
     return NULL;
   } else {
@@ -22,8 +17,33 @@ void *lean_option_unwrap(b_lean_obj_arg a) {
   }
 }
 
-/*
-SDL.init : IO Int
+/**
+ * Option.some a
+ */
+static inline lean_object * lean_mk_option_some(lean_object * a) {
+  lean_object* tuple = lean_alloc_ctor(1, 1, 0);
+  lean_ctor_set(tuple, 0, a);
+  return tuple;
+}
+
+/**
+ * Option.none.
+ * Note that this is the same value for Unit and other constant constructors of inductives.
+ */
+static inline lean_object * lean_mk_option_none() {
+  return lean_box(0);
+}
+
+static inline lean_object * lean_mk_tuple2(lean_object * a, lean_object * b) {
+  lean_object* tuple = lean_alloc_ctor(0, 2, 0);
+  lean_ctor_set(tuple, 0, a);
+  lean_ctor_set(tuple, 1, b);
+  return tuple;
+}
+
+/**
+ * This function initializes  the subsystems specified by \c flags
+ * SDL.init : IO Int
 */
 lean_obj_res lean_sdl_init() {
   int res = SDL_Init(SDL_INIT_EVERYTHING);
@@ -95,7 +115,8 @@ static void sdl_renderer_finalizer(void *ptr) {
 static lean_external_class *get_sdl_renderer_class() {
   if (g_sdl_renderer_class == NULL) {
     g_sdl_renderer_class = lean_register_external_class(
-        &sdl_renderer_finalizer, &noop_foreach);
+      &sdl_renderer_finalizer, &noop_foreach
+    );
   }
   return g_sdl_renderer_class;
 }
@@ -202,7 +223,7 @@ lean_obj_res lean_sdl_destroy_texture(b_lean_obj_arg l) {
 }
 
 /*
-SDL.renderCopy (r: @& Renderer) (t: @& Texture) (src dst: @& SDL_Rect): IO Unit
+SDL.renderCopy (r: @& Renderer) (t: @& Texture) (src dst: @& Option SDL_Rect): IO Unit
 */
 lean_obj_res lean_sdl_render_copy(b_lean_obj_arg r, b_lean_obj_arg t, b_lean_obj_arg o_src, b_lean_obj_arg o_dst) {
   SDL_Rect *src = lean_option_unwrap(o_src);
@@ -350,20 +371,28 @@ static void sdl_event_finalizer(void *ptr) {
 static lean_external_class *get_sdl_event_class() {
   if (g_sdl_event_class == NULL) {
     g_sdl_event_class = lean_register_external_class(
-        &sdl_event_finalizer, &noop_foreach);
+        &sdl_event_finalizer, &noop_foreach
+    );
   }
   return g_sdl_event_class;
 }
 
 /*
-SDL.pollEvent : IO SDL_Event
+SDL.pollEvent : IO $ Prod Bool (Option SDL_Event)
 */
 lean_obj_res lean_sdl_poll_event() {
-  SDL_Event *event;
-  int b = SDL_PollEvent(event);
-  return lean_io_result_mk_ok(lean_alloc_external(get_sdl_event_class(), event));
+  SDL_Event *event = malloc(sizeof(SDL_Event));
+  uint8_t b = (uint8_t) SDL_PollEvent(event);
+  lean_object* tuple;
+  if (b && event != NULL) {
+    lean_object* e = lean_alloc_external(get_sdl_event_class(), event);
+    // Constructs a (Bool, some SDL_Event) tuple
+    tuple = lean_mk_tuple2(lean_box(b), lean_mk_option_some(e));
+  } else {
+    tuple = lean_mk_tuple2(lean_box(b), lean_mk_option_none());
+  }
+  return lean_io_result_mk_ok(tuple);
 }
-
 
 // Application events
 
@@ -581,4 +610,85 @@ uint32_t lean_SDL_USEREVENT() {
 
 uint32_t lean_SDL_LASTEVENT() {
   return SDL_LASTEVENT;
+}
+
+/*
+SDL.SDL_Event.type (s : @& SDL_Event) : UInt32
+*/
+uint32_t lean_sdl_event_type(b_lean_obj_arg s){
+  SDL_Event *event = lean_get_external_data(s);
+  return event->type;
+}
+
+/*
+SDL.Event.toKeyboardEventData (s : @& SDL_Event) : (UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32)
+*/
+lean_obj_res lean_sdl_event_to_keyboard_event_data(b_lean_obj_arg s){
+  SDL_Event * event = lean_get_external_data(s);
+  lean_object * tuple = lean_mk_tuple2(
+    lean_box(event->key.timestamp),
+    lean_mk_tuple2(lean_box(event->key.windowID),
+    lean_mk_tuple2(lean_box(event->key.state),
+    lean_mk_tuple2(lean_box(event->key.repeat),
+    lean_mk_tuple2(lean_box(event->key.keysym.scancode),
+    lean_mk_tuple2(lean_box(event->key.keysym.sym),
+    lean_box(event->key.keysym.mod)
+  ))))));
+
+  return tuple;
+}
+
+/*
+SDL.Event.toMouseMotionEventData (s : @& SDL_Event) : (UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32)
+*/
+lean_obj_res lean_sdl_event_to_mouse_motion_event_data(lean_obj_arg s) {
+  SDL_Event * event = lean_get_external_data(s);
+  lean_object * tuple = lean_mk_tuple2(
+    lean_box(event->motion.timestamp),
+    lean_mk_tuple2(lean_box(event->motion.windowID),
+    lean_mk_tuple2(lean_box(event->motion.which),
+    lean_mk_tuple2(lean_box(event->motion.state),
+    lean_mk_tuple2(lean_box((uint32_t) event->motion.x),
+    lean_mk_tuple2(lean_box((uint32_t) event->motion.y),
+    lean_mk_tuple2(lean_box((uint32_t) event->motion.xrel),
+    lean_box((uint32_t) event->motion.yrel)
+  )))))));
+
+  return tuple;
+}
+
+/*
+SDL.Event.toMouseButtonEventData (s : @& SDL_Event) : (UInt32 × UInt32 × UInt32 × UInt8 × UInt8 × UInt8 × UInt32 × UInt32)
+*/
+lean_obj_res lean_sdl_event_to_mouse_button_event_data(lean_obj_arg s) {
+  SDL_Event * event = lean_get_external_data(s);
+  lean_object * tuple = lean_mk_tuple2(
+    lean_box(event->button.timestamp),
+    lean_mk_tuple2(lean_box(event->button.windowID),
+    lean_mk_tuple2(lean_box(event->button.which),
+    lean_mk_tuple2(lean_box(event->button.button),
+    lean_mk_tuple2(lean_box(event->button.state),
+    lean_mk_tuple2(lean_box(event->button.clicks),
+    lean_mk_tuple2(lean_box(event->button.x),
+    lean_box(event->button.y)
+  )))))));
+
+  return tuple;
+}
+
+/*
+SDL.Event.toMouseWheelEventData (s : @& SDL_Event) : (UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32)
+*/
+lean_obj_res lean_sdl_event_to_mouse_wheel_event_data(lean_obj_arg s) {
+  SDL_Event * event = lean_get_external_data(s);
+  lean_object * tuple = lean_mk_tuple2(
+    lean_box(event->wheel.timestamp),
+    lean_mk_tuple2(lean_box(event->wheel.windowID),
+    lean_mk_tuple2(lean_box(event->wheel.which),
+    lean_mk_tuple2(lean_box(event->wheel.x),
+    lean_mk_tuple2(lean_box(event->wheel.y),
+    lean_box(event->wheel.direction)
+  )))));
+
+  return tuple;
 }

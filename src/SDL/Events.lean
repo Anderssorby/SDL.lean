@@ -1,14 +1,55 @@
+import SDL.Types
 namespace SDL
+
+structure KeyboardEvent where
+  type : UInt32
+  timestamp : UInt32
+  windowId : UInt32
+  state : UInt32
+  repeat : UInt32
+  scancode : UInt32
+  sym : UInt32
+  mod : UInt32
+  
+structure MouseMotionEvent where
+  timestamp : UInt32
+  windowId : UInt32
+  which : UInt32
+  state : UInt32
+  point : Point
+  xrel : UInt32
+  yrel : UInt32
+
+structure MouseButtonEvent where
+  type : UInt32
+  timestamp : UInt32
+  windowId : UInt32
+  which : UInt32
+  button : UInt8
+  state : UInt8
+  clicks : UInt8
+  point : Point
+
+structure MouseWheelEvent where
+  timestamp : UInt32
+  windowId : UInt32
+  which : UInt32
+  x : UInt32
+  y : UInt32
+  direction : UInt32
+
+structure UserEvent where
+  type : UInt32
 
 inductive Event
   | commonEvent -- common, common event data
   | windowEvent -- window, window event data
-  | keyboardEvent -- key, keyboard event data
+  | keyboardEvent : KeyboardEvent → Event -- key, keyboard event data
   | textEditingEvent -- edit, text editing event data
   | textInputEvent -- text, text input event data
-  | mouseMotionEvent -- motion, mouse motion event data
-  | mouseButtonEvent -- button, mouse button event data
-  | mouseWheelEvent -- wheel, mouse wheel event data
+  | mouseMotionEvent : MouseMotionEvent → Event -- motion, mouse motion event data
+  | mouseButtonEvent : MouseButtonEvent → Event -- button, mouse button event data
+  | mouseWheelEvent : MouseWheelEvent → Event -- wheel, mouse wheel event data
   | joyAxisEvent -- jaxis, joystick axis event data
   | joyBallEvent -- jball, joystick ball event data
   | joyHatEvent -- jhat, joystick hat event data
@@ -19,12 +60,42 @@ inductive Event
   | controllerDeviceEvent -- cdevice, game controller device event data
   | audioDeviceEvent -- adevice, audio device event data (>= SDL 2.0.4)
   | quitEvent -- quit, quit request event data,
-  | userEvent -- user, custom event data,
+  | userEvent : UserEvent → Event -- user, custom event data,
   | sysWMEvent -- swm, system dependent window event data
   | touchFingerEvent -- tfinger, touch finger event data
   | multiGestureEvent -- mgesture, multi finger gesture data
   | dollarGestureEvent -- dgesture, multi finger gesture data
   | dropEvent --drop, drag and drop event data
+
+open Event
+
+instance : ToString Event where
+  toString e :=
+  match e with
+  | commonEvent => "SDL_CommonEvent"   
+  | windowEvent => "SDL_WindowEvent"
+  | keyboardEvent ke => "SDL_KeyboardEvent"   
+  | textEditingEvent => "SDL_TextEditingEvent" 
+  | textInputEvent => "SDL_TextInputEvent"
+  | mouseMotionEvent mme => "SDL_MouseMotionEvent"
+  | mouseButtonEvent _ => "SDL_MouseButton"
+  | mouseWheelEvent _ => "SDL_MouseWheelEvent"
+  | joyAxisEvent => "SDL_JoyAxisEvent"
+  | joyBallEvent => "SDL_JoyBallEvent"
+  | joyHatEvent => "SDL_JoyHatEvent"
+  | joyButtonEvent => "SDL_JoyButtonEvent"
+  | joyDeviceEvent => "SDL_JoyDeviceEvent"
+  | controllerAxisEvent => "SDL_ControllerAxisEvent"
+  | controllerButtonEvent => "SDL_ControllerButtonEvent"
+  | controllerDeviceEvent => "SDL_ControllerDeviceEvent"
+  | audioDeviceEvent => "SDL_AudioDeviceEvent"
+  | quitEvent => "SDL_QuitEvent"
+  | userEvent u => "SDL_UserEvent"
+  | sysWMEvent => "SDL_SysWMEvent"
+  | touchFingerEvent => "SDL_TouchFingerEvent"
+  | multiGestureEvent => "SDL_MultiGestureEvent"
+  | dollarGestureEvent => "SDL_DollarGestureEvent"
+  | dropEvent => "SDL_DropEvent" 
 
 constant SDL_EventP : PointedType
 
@@ -33,7 +104,7 @@ def SDL_Event := SDL_EventP.type
 instance : Inhabited SDL_Event := ⟨SDL_EventP.val⟩
 
 @[extern "lean_sdl_poll_event"]
-constant pollEvent : IO SDL_Event
+constant pollEvent : IO (Bool × Option SDL_Event)
 
 namespace Event.Type
 
@@ -257,5 +328,110 @@ private constant _SDL_LASTEVENT (u : Unit) : UInt32 -- only for bounding interna
 def SDL_LASTEVENT: UInt32 := _SDL_LASTEVENT ()
 
 end Event.Type
+
+@[extern "lean_sdl_event_type"]
+constant SDL_Event.type (s : @& SDL_Event) : UInt32
+
+/-
+Extract a tuple of the fields of the SDL_KeyboardEvent.
+Returns (timestamp, windowId, state, repeat, scancode, sym, mod).
+-/
+@[extern "lean_sdl_event_to_keyboard_event_data"]
+protected constant SDL_Event.toKeyboardEventData (s : @& SDL_Event) : (UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32)
+
+/-
+Extract a tuple of the fields of the SDL_MouseMotionEvent.
+Returns (timestamp, windowId, which, state, x, y, xrel, yrel).
+-/
+@[extern "lean_sdl_event_to_mouse_motion_event_data"]
+protected constant SDL_Event.toMouseMotionEventData (s : @& SDL_Event) : (UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32)
+
+/-
+Extract a tuple of the fields of the SDL_MouseButtonEvent.
+Returns (timestamp, windowId, which, button, state, clicks, x, y).
+-/
+@[extern "lean_sdl_event_to_mouse_button_event_data"]
+protected constant SDL_Event.toMouseButtonEventData (s : @& SDL_Event) : (UInt32 × UInt32 × UInt32 × UInt8 × UInt8 × UInt8 × UInt32 × UInt32)
+
+/-
+Extract a tuple of the fields of the SDL_MouseWheelEvent.
+Returns (timestamp, windowId, which, x, y, direction).
+-/
+@[extern "lean_sdl_event_to_mouse_wheel_event_data"]
+protected constant SDL_Event.toMouseWheelEventData (s : @& SDL_Event) : (UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32)
+
+open Event.Type in
+def SDL_Event.toEvent (s : SDL_Event) : Event :=
+  let type := s.type
+  if type = SDL_QUIT then
+    Event.quitEvent
+  else if type = SDL_KEYDOWN ∨ type = SDL_KEYUP then
+    let (timestamp, windowId, state, repeat, scancode, sym, mod) := s.toKeyboardEventData
+    Event.keyboardEvent { type, windowId, state, repeat, scancode, sym, mod, timestamp : KeyboardEvent }
+  else if type = SDL_MOUSEMOTION then
+    let (timestamp, windowId, which, state, x, y, xrel, yrel) := s.toMouseMotionEventData
+    Event.mouseMotionEvent { timestamp, windowId, which, state, point := { x, y : Point}, xrel, yrel : MouseMotionEvent }
+  else if type = SDL_MOUSEBUTTONDOWN ∨ type = SDL_MOUSEBUTTONUP then
+    let (timestamp, windowId, which, button, state, clicks, x, y) := s.toMouseButtonEventData
+    Event.mouseButtonEvent { type, timestamp, windowId, which, button, state, clicks, point := {x, y} : MouseButtonEvent }
+  else if type = SDL_MOUSEWHEEL then
+    let (timestamp, windowId, which, x, y, direction) := s.toMouseWheelEventData
+    Event.mouseWheelEvent { timestamp, windowId, which, x, y, direction : MouseWheelEvent }
+  else if type = SDL_AUDIODEVICEADDED ∨ type = SDL_AUDIODEVICEREMOVED then
+    Event.audioDeviceEvent
+  else if type = SDL_CONTROLLERAXISMOTION then
+    Event.controllerAxisEvent
+  else if type = SDL_CONTROLLERBUTTONDOWN ∨ type = SDL_CONTROLLERBUTTONUP then
+    Event.controllerButtonEvent
+  else if type = SDL_CONTROLLERDEVICEADDED
+    ∨ type = SDL_CONTROLLERDEVICEREMOVED
+    ∨ type = SDL_CONTROLLERDEVICEREMAPPED then
+    Event.controllerDeviceEvent
+  else if type = SDL_DOLLARGESTURE ∨ type = SDL_DOLLARRECORD then
+    Event.dollarGestureEvent
+  else if type = SDL_DROPFILE
+    ∨ type = SDL_DROPTEXT
+    ∨ type = SDL_DROPBEGIN
+    ∨ type = SDL_DROPCOMPLETE then
+    Event.dropEvent
+  else if type = SDL_FINGERMOTION
+    ∨ type = SDL_FINGERDOWN
+    ∨ type = SDL_FINGERUP then
+    Event.touchFingerEvent
+  else if type = SDL_JOYAXISMOTION then
+    Event.joyAxisEvent
+  else if type = SDL_JOYBALLMOTION then
+    Event.joyBallEvent
+  else if type = SDL_JOYHATMOTION then
+    Event.joyHatEvent
+  else if type = SDL_JOYBUTTONDOWN ∨ type = SDL_JOYBUTTONUP then
+    Event.joyButtonEvent
+  else if type = SDL_JOYDEVICEADDED ∨ type = SDL_JOYDEVICEREMOVED then
+    Event.joyDeviceEvent
+  else if type = SDL_MULTIGESTURE then
+    Event.multiGestureEvent
+  else if type = SDL_SYSWMEVENT then
+    Event.sysWMEvent
+  else if type = SDL_TEXTEDITING then
+    Event.textEditingEvent
+  else if type = SDL_TEXTINPUT then
+    Event.textInputEvent
+  else if type = SDL_WINDOWEVENT then
+    Event.windowEvent
+  else
+    Event.userEvent { type : UserEvent }
+
+/-
+Handle the current queue of Event.
+-/
+partial def Event.processEventQueue {M : Type → Type} [MonadLift IO M] [Monad M]
+    (handleEvent : Event → M Unit) : M Unit := do
+  let rec loop : M Unit := do
+    let (hasNext, opt_sdl_event) ← liftM SDL.pollEvent
+    if let some sdl_event := opt_sdl_event then
+      handleEvent sdl_event.toEvent
+      if hasNext then
+        loop
+  loop
 
 end SDL
