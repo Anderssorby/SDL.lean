@@ -377,6 +377,16 @@ def SDL_Event.toEvent (s : SDL_Event) : Event :=
   else if type = SDL_MOUSEWHEEL then
     let (timestamp, windowId, which, x, y, direction) := s.toMouseWheelEventData
     Event.mouseWheelEvent { timestamp, windowId, which, x, y, direction : MouseWheelEvent }
+  else if type = SDL_AUDIODEVICEADDED ∨ type = SDL_AUDIODEVICEREMOVED then
+    Event.audioDeviceEvent
+  else if type = SDL_CONTROLLERAXISMOTION then
+    Event.controllerAxisEvent
+  else if type = SDL_CONTROLLERBUTTONDOWN ∨ type = SDL_CONTROLLERBUTTONUP then
+    Event.controllerButtonEvent
+  else if type = SDL_CONTROLLERDEVICEADDED
+    ∨ type = SDL_CONTROLLERDEVICEREMOVED
+    ∨ type = SDL_CONTROLLERDEVICEREMAPPED then
+    Event.controllerDeviceEvent
   else
     Event.userEvent { type : UserEvent }
 
