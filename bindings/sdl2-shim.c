@@ -115,7 +115,8 @@ static void sdl_renderer_finalizer(void *ptr) {
 static lean_external_class *get_sdl_renderer_class() {
   if (g_sdl_renderer_class == NULL) {
     g_sdl_renderer_class = lean_register_external_class(
-        &sdl_renderer_finalizer, &noop_foreach);
+      &sdl_renderer_finalizer, &noop_foreach
+    );
   }
   return g_sdl_renderer_class;
 }
@@ -222,7 +223,7 @@ lean_obj_res lean_sdl_destroy_texture(b_lean_obj_arg l) {
 }
 
 /*
-SDL.renderCopy (r: @& Renderer) (t: @& Texture) (src dst: @& SDL_Rect): IO Unit
+SDL.renderCopy (r: @& Renderer) (t: @& Texture) (src dst: @& Option SDL_Rect): IO Unit
 */
 lean_obj_res lean_sdl_render_copy(b_lean_obj_arg r, b_lean_obj_arg t, b_lean_obj_arg o_src, b_lean_obj_arg o_dst) {
   SDL_Rect *src = lean_option_unwrap(o_src);
@@ -616,31 +617,42 @@ SDL.SDL_Event.type (s : @& SDL_Event) : UInt32
 */
 uint32_t lean_sdl_event_type(b_lean_obj_arg s){
   SDL_Event *event = lean_get_external_data(s);
-#ifdef DEBUG
-  printf("event %p\n type %d", event);
-#endif
-  if (event != NULL) {
-    return event->type;
-  }
-#ifdef DEBUG
-  printf("WARNING event is NULL");
-#endif
-  return 0;
+  return event->type;
 }
 
 /*
-SDL.Event.toKeyboardEventData (s : @& SDL_Event) : Array UInt32
+SDL.Event.toKeyboardEventData (s : @& SDL_Event) : (UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32)
 */
 lean_obj_res lean_sdl_event_to_keyboard_event_data(b_lean_obj_arg s){
   SDL_Event * event = lean_get_external_data(s);
-  lean_object * arr = lean_mk_empty_array_with_capacity(7);
-  lean_array_push(arr, lean_box(event->key.timestamp));
-  lean_array_push(arr, lean_box(event->key.windowID));
-  lean_array_push(arr, lean_box(event->key.state));
-  lean_array_push(arr, lean_box(event->key.repeat));
-  lean_array_push(arr, lean_box(event->key.keysym.scancode));
-  lean_array_push(arr, lean_box(event->key.keysym.sym));
-  lean_array_push(arr, lean_box(event->key.keysym.mod));
+  lean_object * tuple = lean_mk_tuple2(
+    lean_box(event->key.timestamp),
+    lean_mk_tuple2(lean_box(event->key.windowID),
+    lean_mk_tuple2(lean_box(event->key.state),
+    lean_mk_tuple2(lean_box(event->key.repeat),
+    lean_mk_tuple2(lean_box(event->key.keysym.scancode),
+    lean_mk_tuple2(lean_box(event->key.keysym.sym),
+    lean_box(event->key.keysym.mod)
+  ))))));
 
-  return arr;
+  return tuple;
+}
+
+/*
+SDL.Event.toMouseMotionEventData (s : @& SDL_Event) : (UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32)
+*/
+lean_obj_res lean_sdl_event_to_mouse_motion_event_data(lean_obj_arg s) {
+  SDL_Event * event = lean_get_external_data(s);
+  lean_object * tuple = lean_mk_tuple2(
+    lean_box(event->motion.timestamp),
+    lean_mk_tuple2(lean_box(event->motion.windowID),
+    lean_mk_tuple2(lean_box(event->motion.which),
+    lean_mk_tuple2(lean_box(event->motion.state),
+    lean_mk_tuple2(lean_box((uint32_t) event->motion.x),
+    lean_mk_tuple2(lean_box((uint32_t) event->motion.y),
+    lean_mk_tuple2(lean_box((uint32_t) event->motion.xrel),
+    lean_box((uint32_t) event->motion.yrel)
+  )))))));
+
+  return tuple;
 }

@@ -1,10 +1,6 @@
+import SDL.Types
 import SDL.Events
 namespace SDL
-
-/-
-Dummy type for SDL
--/
-constant SDL : Type
 
 @[extern "lean_sdl_init"]
 constant init : IO Int
@@ -92,23 +88,6 @@ After this the texture can no longer be used.
 @[extern "lean_sdl_destroy_texture"]
 constant destroyTexture : (t : @& Texture) → IO Unit
 
-/-
-A graphic rectangle with (x, y) in the upper left corner.
--/
-structure Rect where
-  x : UInt32
-  y : UInt32
-  h : UInt32
-  w : UInt32
-
-instance : ToString Rect := ⟨λ r => s!"Rect [x = {r.x}, y = {r.y}, w = {r.w}, h = {r.h}]"⟩
-
-structure Point where
-  x : UInt32
-  y : UInt32
-
-instance : ToString Point := ⟨λ p => s!"Point [x = {p.x}, y = {p.y}]"⟩
-
 constant SDL_RectP : PointedType
 
 def SDL_Rect := SDL_RectP.type
@@ -161,24 +140,6 @@ Clear the renderer with the current draw color.
 -/
 @[extern "lean_sdl_render_clear"]
 constant renderClear : (r: @& Renderer) → IO Unit
-
-structure Color where
-  r : UInt8
-  g : UInt8
-  b : UInt8
-  a : UInt8 := 255
-
-namespace Color
-
-def white  := { r:=255, g:=255, b:=255, a:=255 : Color }
-def red  := { r:=255, g:=0, b:=0, a:=255 : Color }
-def green  := { r:=0, g:=255, b:=0, a:=255 : Color }
-def blue  := { r:=0, g:=0, b:=255, a:=255 : Color }
-def yellow  := { r:=0, g:=255, b:=255, a:=255 : Color }
-def black  := { r:=0, g:=0, b:=0, a:=255 : Color }
-def transparent  := { r:=0, g:=0, b:=0, a:=0 : Color }
-
-end Color
 
 @[extern "lean_sdl_set_render_draw_color"]
 def setRenderDrawColor (r: @& Renderer) (r g b a : UInt8) : IO Unit := ()

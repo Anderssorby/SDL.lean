@@ -1,9 +1,27 @@
+import SDL.Types
 namespace SDL
 
 structure KeyboardEvent where
+  type : UInt32
   timestamp : UInt32
-  key : Char
+  windowId : UInt32
+  state : UInt32
+  repeat : UInt32
+  scancode : UInt32
+  sym : UInt32
+  mod : UInt32
   
+structure MouseMotionEvent where
+  timestamp : UInt32
+  windowId : UInt32
+  which : UInt32
+  state : UInt32
+  point : Point
+  xrel : UInt32
+  yrel : UInt32
+
+structure UserEvent where
+  type : UInt32
 
 inductive Event
   | commonEvent -- common, common event data
@@ -11,7 +29,7 @@ inductive Event
   | keyboardEvent : KeyboardEvent → Event -- key, keyboard event data
   | textEditingEvent -- edit, text editing event data
   | textInputEvent -- text, text input event data
-  | mouseMotionEvent -- motion, mouse motion event data
+  | mouseMotionEvent : MouseMotionEvent → Event -- motion, mouse motion event data
   | mouseButtonEvent -- button, mouse button event data
   | mouseWheelEvent -- wheel, mouse wheel event data
   | joyAxisEvent -- jaxis, joystick axis event data
@@ -24,12 +42,42 @@ inductive Event
   | controllerDeviceEvent -- cdevice, game controller device event data
   | audioDeviceEvent -- adevice, audio device event data (>= SDL 2.0.4)
   | quitEvent -- quit, quit request event data,
-  | userEvent -- user, custom event data,
+  | userEvent : UserEvent → Event -- user, custom event data,
   | sysWMEvent -- swm, system dependent window event data
   | touchFingerEvent -- tfinger, touch finger event data
   | multiGestureEvent -- mgesture, multi finger gesture data
   | dollarGestureEvent -- dgesture, multi finger gesture data
   | dropEvent --drop, drag and drop event data
+
+open Event
+
+instance : ToString Event where
+  toString e :=
+  match e with
+  | commonEvent => "SDL_CommonEvent"   
+  | windowEvent => "SDL_WindowEvent"
+  | keyboardEvent ke => "SDL_KeyboardEvent"   
+  | textEditingEvent => "SDL_TextEditingEvent" 
+  | textInputEvent => "SDL_TextInputEvent"
+  | mouseMotionEvent mme => "SDL_MouseMotionEvent"
+  | mouseButtonEvent => "SDL_MouseButton"
+  | mouseWheelEvent => "SDL_MouseWheelEvent"    
+  | joyAxisEvent => "SDL_JoyAxisEvent"
+  | joyBallEvent => "SDL_JoyBallEvent"
+  | joyHatEvent => "SDL_JoyHatEvent"
+  | joyButtonEvent => "SDL_JoyButtonEvent"
+  | joyDeviceEvent => "SDL_JoyDeviceEvent"
+  | controllerAxisEvent => "SDL_ControllerAxisEvent"
+  | controllerButtonEvent => "SDL_ControllerButtonEvent"
+  | controllerDeviceEvent => "SDL_ControllerDeviceEvent"
+  | audioDeviceEvent => "SDL_AudioDeviceEvent"
+  | quitEvent => "SDL_QuitEvent"
+  | userEvent u => "SDL_UserEvent"
+  | sysWMEvent => "SDL_SysWMEvent"
+  | touchFingerEvent => "SDL_TouchFingerEvent"
+  | multiGestureEvent => "SDL_MultiGestureEvent"
+  | dollarGestureEvent => "SDL_DollarGestureEvent"
+  | dropEvent => "SDL_DropEvent" 
 
 constant SDL_EventP : PointedType
 
@@ -267,31 +315,44 @@ end Event.Type
 constant SDL_Event.type (s : @& SDL_Event) : UInt32
 
 /-
-Extract an Array of the fields of the SDL_KeyboardEvent.
+Extract a tuple of the fields of the SDL_KeyboardEvent.
+Returns (timestamp, windowId, state, repeat, scancode, sym, mod).
 -/
 @[extern "lean_sdl_event_to_keyboard_event_data"]
-private constant SDL_Event.toKeyboardEventData (s : @& SDL_Event) : Array UInt32
+protected constant SDL_Event.toKeyboardEventData (s : @& SDL_Event) : (UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32)
+
+/-
+Extract a tuple of the fields of the SDL_KeyboardEvent.
+Returns (timestamp, windowId, which, state, x, y, xrel, yrel).
+-/
+@[extern "lean_sdl_event_to_mouse_motion_event_data"]
+protected constant SDL_Event.toMouseMotionEventData (s : @& SDL_Event) : (UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32 × UInt32)
 
 open Event.Type in
 def SDL_Event.toEvent (s : SDL_Event) : Event :=
   let type := s.type
   if type = SDL_QUIT then
     Event.quitEvent
-  else if type = SDL_KEYDOWN then
-    let d := s.toKeyboardEventData
-    let timestamp := d.get! 0
-    Event.keyboardEvent { key := ' ', timestamp : KeyboardEvent }
+  else if type = SDL_KEYDOWN ∨ type = SDL_KEYUP then
+    let (timestamp, windowId, state, repeat, scancode, sym, mod) := s.toKeyboardEventData
+    Event.keyboardEvent { type, windowId, state, repeat, scancode, sym, mod, timestamp : KeyboardEvent }
+  else if type = SDL_MOUSEMOTION then
+    let (timestamp, windowId, which, state, x, y, xrel, yrel) := s.toMouseMotionEventData
+    Event.mouseMotionEvent { timestamp, windowId, which, state, point := { x, y : Point}, xrel, yrel : MouseMotionEvent }
   else
-    Event.userEvent
+    Event.userEvent { type : UserEvent }
 
-def Event.next : IO <| Option Event := do
-  let (hasNext, opt_sdl_event) ← SDL.pollEvent
-  if hasNext then
-    println! "hasNext {hasNext}"
-    return (SDL_Event.toEvent <$> opt_sdl_event)
-  else
-    println! "has no next"
-    return none
-
+/-
+Handle the current queue of Event.
+-/
+partial def Event.processEventQueue {M : Type → Type} [MonadLift IO M] [Monad M]
+    (handleEvent : Event → M Unit) : M Unit := do
+  let rec loop : M Unit := do
+    let (hasNext, opt_sdl_event) ← liftM SDL.pollEvent
+    if let some sdl_event := opt_sdl_event then
+      handleEvent sdl_event.toEvent
+      if hasNext then
+        loop
+  loop
 
 end SDL
