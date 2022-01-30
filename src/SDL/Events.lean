@@ -387,6 +387,37 @@ def SDL_Event.toEvent (s : SDL_Event) : Event :=
     ∨ type = SDL_CONTROLLERDEVICEREMOVED
     ∨ type = SDL_CONTROLLERDEVICEREMAPPED then
     Event.controllerDeviceEvent
+  else if type = SDL_DOLLARGESTURE ∨ type = SDL_DOLLARRECORD then
+    Event.dollarGestureEvent
+  else if type = SDL_DROPFILE
+    ∨ type = SDL_DROPTEXT
+    ∨ type = SDL_DROPBEGIN
+    ∨ type = SDL_DROPCOMPLETE then
+    Event.dropEvent
+  else if type = SDL_FINGERMOTION
+    ∨ type = SDL_FINGERDOWN
+    ∨ type = SDL_FINGERUP then
+    Event.touchFingerEvent
+  else if type = SDL_JOYAXISMOTION then
+    Event.joyAxisEvent
+  else if type = SDL_JOYBALLMOTION then
+    Event.joyBallEvent
+  else if type = SDL_JOYHATMOTION then
+    Event.joyHatEvent
+  else if type = SDL_JOYBUTTONDOWN ∨ type = SDL_JOYBUTTONUP then
+    Event.joyButtonEvent
+  else if type = SDL_JOYDEVICEADDED ∨ type = SDL_JOYDEVICEREMOVED then
+    Event.joyDeviceEvent
+  else if type = SDL_MULTIGESTURE then
+    Event.multiGestureEvent
+  else if type = SDL_SYSWMEVENT then
+    Event.sysWMEvent
+  else if type = SDL_TEXTEDITING then
+    Event.textEditingEvent
+  else if type = SDL_TEXTINPUT then
+    Event.textInputEvent
+  else if type = SDL_WINDOWEVENT then
+    Event.windowEvent
   else
     Event.userEvent { type : UserEvent }
 
