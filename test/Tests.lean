@@ -1,4 +1,5 @@
 import SDL
+import Tests.Shooter
 open SDL
 
 def animationTest (debugLog : Bool := false) : IO Unit := do
@@ -114,6 +115,7 @@ def main (args : List String) : IO UInt32 := do
     | "bitmap" => bitmapTest
     | "animation" => animationTest (args.contains "-d")
     | "event" => eventTest (args.contains "-d")
+    | "shooter" => Shooter.run (args.contains "-d")
     | s => IO.eprintln s!"Unknown test {s}"
     pure 0
   catch e =>
