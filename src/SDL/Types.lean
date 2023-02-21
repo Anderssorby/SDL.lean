@@ -8,12 +8,14 @@ structure Rect where
   y : UInt32
   h : UInt32
   w : UInt32
+  deriving Repr, Inhabited
 
 instance : ToString Rect := ⟨λ r => s!"Rect [x = {r.x}, y = {r.y}, w = {r.w}, h = {r.h}]"⟩
 
 structure Point where
   x : UInt32
   y : UInt32
+  deriving Repr, Inhabited
   
 def Rect.move (r : Rect) (p : Point) : Rect :=
   {r with x := p.x, y := p.y}
@@ -25,6 +27,7 @@ structure Color where
   g : UInt8
   b : UInt8
   a : UInt8 := 255
+  deriving Repr, Inhabited
 
 namespace Color
 

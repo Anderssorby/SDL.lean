@@ -1,5 +1,11 @@
 # SDL2 bindings for lean (unfinished)
 
+## Using lake in a nix env
+
+Build with nix and lake `nix develop --command lake build`. Nix provides the external dependencies and environment.
+
+## Using nix
+
 Build with `nix build .`
 
 ## Test examples
@@ -18,4 +24,10 @@ Run a named test:
 
 ```bash
 nix run .#test -- NAME_OF_TEST
+```
+
+or with lake
+
+```bash
+lake exe Tests NAME_OF_TEST
 ```

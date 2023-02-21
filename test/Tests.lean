@@ -5,6 +5,7 @@ def animationTest (debugLog : Bool := false) : IO Unit := do
   let r ← SDL.init
   if r != 0 then
     IO.eprintln "Error in init"
+    return
   let window ← SDL.createWindow "Animation" 800 500
   let renderer ← SDL.createRenderer window
   let surf ← SDL.loadImage "images/green_nebula.png"
@@ -89,7 +90,7 @@ partial def eventTest (debugLog : Bool := false) : IO Unit := do
       renderer.present
       SDL.delay 100
     if (← get).cont then loop
-  let (_, d) ← loop.run { debugLog : Data }
+  let (_, _d) ← loop.run { debugLog : Data }
   SDL.destroyWindow window
   SDL.quit
   

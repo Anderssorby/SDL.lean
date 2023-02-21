@@ -3,16 +3,19 @@
 
   inputs = {
     lean = {
-      url = github:leanprover/lean4;
+      url = "github:leanprover/lean4";
     };
-    nixpkgs.url = github:nixos/nixpkgs/nixos-21.05;
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     utils = {
-      url = github:yatima-inc/nix-utils;
+      url = "github:yatima-inc/nix-utils";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+    flake-utils = {
+      url = "github:numtide/flake-utils";
     };
   };
 
-  outputs = { self, lean, utils, nixpkgs }:
+  outputs = { self, lean, utils, nixpkgs, flake-utils }:
     let
       supportedSystems = [
         # "aarch64-linux"
@@ -23,7 +26,7 @@
       ];
       inherit (utils) lib;
     in
-    lib.eachSystem supportedSystems (system:
+    flake-utils.lib.eachSystem supportedSystems (system:
       let
         leanPkgs = lean.packages.${system};
         pkgs = nixpkgs.legacyPackages.${system};
@@ -39,6 +42,10 @@
           "${leanPkgs.lean-bin-tools-unwrapped}/include"
         ];
         INCLUDE_PATH = concatStringsSep ":" includes;
+        libs = [
+          "${pkgs.SDL2.out}/lib" "${pkgs.SDL2_image.out}/lib"
+        ];
+        LD_LIBRARY_PATH = concatStringsSep ":" libs;
         libSDL2 = pkgs.SDL2.out // {
           name = "lib/libSDL2.so";
           linkName = "SDL2";
@@ -95,7 +102,7 @@
             # Where the lean files are located
             src = ./test;
           };
-        joinDepsDerivationns = getSubDrv:
+        joinDepsDerivations = getSubDrv:
           pkgs.lib.concatStringsSep ":" (map (d: "${getSubDrv d}") ([ ] ++ project.allExternalDeps));
         withGdb = bin: pkgs.writeShellScriptBin "${bin.name}-with-gdb" "${pkgs.gdb}/bin/gdb ${bin}/bin/${bin.name}";
       in
@@ -118,15 +125,26 @@
         checks.test = test.executable;
 
         defaultPackage = self.packages.${system}.${name};
-        devShell = pkgs.mkShell {
-          inputsFrom = [ project.executable ];
-          buildInputs = with pkgs; [
-            leanPkgs.lean
-          ];
-          LEAN_PATH = joinDepsDerivationns (d: d.modRoot);
-          LEAN_SRC_PATH = joinDepsDerivationns (d: d.src);
-          C_INCLUDE_PATH = INCLUDE_PATH;
-          CPLUS_INCLUDE_PATH = INCLUDE_PATH;
+        devShells = {
+          default = pkgs.mkShell {
+            buildInputs = with pkgs; [
+              SDL2
+              SDL2_image
+              pkg-config
+              elan
+            ];
+            C_INCLUDE_PATH = INCLUDE_PATH;
+          };
+          lean = pkgs.mkShell {
+            inputsFrom = [ project.executable ];
+            buildInputs = with pkgs; [
+              SDL2
+              SDL2_image
+              pkg-config
+              leanPkgs.lean-dev
+            ];
+            C_INCLUDE_PATH = INCLUDE_PATH;
+          };
         };
       });
 }
