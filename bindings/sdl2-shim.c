@@ -347,7 +347,8 @@ lean_obj_res lean_sdl_mk_sdl_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h
   r->y = y;
   r->w = w;
   r->h = h;
-  return lean_alloc_external(get_sdl_rect_class(), r);
+  lean_object *lean_t  = lean_alloc_external(get_sdl_rect_class(), r);
+  return lean_io_result_mk_ok(lean_t);
 }
 
 /*
