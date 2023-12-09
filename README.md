@@ -31,3 +31,5 @@ or with lake
 ```bash
 lake exe Tests NAME_OF_TEST
 ```
+
+If your [SDL2 links against a newer version of glibc than Lean does](https://leanprover.zulipchat.com/#narrow/stream/270676-lean4/topic/SDL2.20library.20SDL.2Elean/near/375967370), run `export LEAN_CC=gcc` to make Lean use your system glibc.
