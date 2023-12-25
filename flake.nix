@@ -42,10 +42,10 @@
           "${leanPkgs.lean-bin-tools-unwrapped}/include"
         ];
         INCLUDE_PATH = concatStringsSep ":" includes;
-        libs = [
-          "${pkgs.SDL2.out}/lib" "${pkgs.SDL2_image.out}/lib"
-        ];
-        LD_LIBRARY_PATH = concatStringsSep ":" libs;
+        # libs = [
+        #   "${pkgs.SDL2.out}/lib" "${pkgs.SDL2_image.out}/lib"
+        # ];
+        # LD_LIBRARY_PATH = concatStringsSep ":" libs;
         libSDL2 = pkgs.SDL2.out // {
           name = "lib/libSDL2.so";
           linkName = "SDL2";
@@ -102,8 +102,8 @@
             # Where the lean files are located
             src = ./test;
           };
-        joinDepsDerivations = getSubDrv:
-          pkgs.lib.concatStringsSep ":" (map (d: "${getSubDrv d}") ([ ] ++ project.allExternalDeps));
+        # joinDepsDerivations = getSubDrv:
+        #   pkgs.lib.concatStringsSep ":" (map (d: "${getSubDrv d}") ([ ] ++ project.allExternalDeps));
         withGdb = bin: pkgs.writeShellScriptBin "${bin.name}-with-gdb" "${pkgs.gdb}/bin/gdb ${bin}/bin/${bin.name}";
       in
       {
