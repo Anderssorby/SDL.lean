@@ -2,7 +2,7 @@ import Lake
 open Lake DSL
 
 package «SDL» {
-  moreLinkArgs := #["-L./build/lib", "-lsdl2-shim", "-lSDL2", "-lSDL2_image"]
+  moreLinkArgs := #["-L.lake/build/lib", "-lsdl2-shim", "-lSDL2", "-lSDL2_image"]
   extraDepTargets := #["sdl2-shim"]
 }
 
