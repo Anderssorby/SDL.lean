@@ -2,3 +2,4 @@
 result*
 /build
 /lake-packages/*
+/.lake
