@@ -1,14 +1,11 @@
 import Lake
 open Lake DSL
 
-package «SDL» {
-  moreLinkArgs := #["-L.lake/build/lib", "-lsdl2-shim", "-lSDL2", "-lSDL2_image"]
-  extraDepTargets := #["sdl2-shim"]
-}
+package «SDL» where
+  moreLinkArgs := #["-lSDL2", "-lSDL2_image"]
 
-lean_lib «SDL» {
+lean_lib «SDL» where
   srcDir := "src"
-}
 
 def cDir   := "bindings"
 def ffiSrc := "sdl2-shim.c"
@@ -18,16 +15,13 @@ def ffiLib := "sdl2-shim"
 target ffi.o pkg : FilePath := do
   let oFile := pkg.buildDir / ffiO
   let srcJob ← inputFile <| pkg.dir / cDir / ffiSrc
-  buildFileAfterDep oFile srcJob fun srcFile => do
-    let flags := #["-I", (← getLeanIncludeDir).toString,
-      "-I", (<- IO.getEnv "C_INCLUDE_PATH").getD "", "-fPIC"]
-    compileO ffiSrc oFile srcFile flags
+  let weakArgs := #["-I", (← getLeanIncludeDir).toString]
+  buildO ffiSrc oFile srcJob weakArgs #["-fPIC"] "cc" getLeanTrace
 
-target «sdl2-shim» pkg : FilePath := do
+extern_lib «sdl2-shim» pkg := do
   let name := nameToStaticLib ffiLib
   let ffiO ← fetch <| pkg.target ``ffi.o
-  buildStaticLib (pkg.buildDir / "lib" / name) #[ffiO]
+  buildStaticLib (pkg.buildDir / name) #[ffiO]
 
-lean_exe Tests {
+@[default_target] lean_exe Tests where
   root := `test.Tests
-}
